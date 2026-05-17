@@ -1,0 +1,70 @@
+{
+  "entities": {
+    "GymOwner": {
+      "title": "Gym Owner Profile",
+      "description": "Details about the gym and its owner",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "gymName": { "type": "string" },
+        "name": { "type": "string" },
+        "phone": { "type": "string" },
+        "email": { "type": "string" },
+        "address": { "type": "string" },
+        "photoUrl": { "type": "string" },
+        "qrPhotoUrl": { "type": "string" },
+        "upiId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "gymName", "name", "createdAt"]
+    },
+    "Member": {
+      "title": "Gym Member",
+      "description": "Details about a gym member and their membership",
+      "type": "object",
+      "properties": {
+        "ownerId": { "type": "string" },
+        "name": { "type": "string" },
+        "age": { "type": "number" },
+        "phone": { "type": "string" },
+        "email": { "type": "string" },
+        "address": { "type": "string" },
+        "photoUrl": { "type": "string" },
+        "gender": { "type": "string", "enum": ["male", "female", "others"] },
+        "startDate": { "type": "string", "format": "date-time" },
+        "endDate": { "type": "string", "format": "date-time" },
+        "amountPaid": { "type": "number" },
+        "paymentMethod": { "type": "string", "enum": ["cash", "upi"] },
+        "status": { "type": "string", "enum": ["active", "out"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["ownerId", "name", "startDate", "endDate", "amountPaid", "status", "createdAt"]
+    },
+    "FamePhoto": {
+      "title": "Gym of Fame Photo",
+      "description": "Photos of impressive physiques from the gym",
+      "type": "object",
+      "properties": {
+        "ownerId": { "type": "string" },
+        "photoUrl": { "type": "string" },
+        "description": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["ownerId", "photoUrl", "createdAt"]
+    }
+  },
+  "firestore": {
+    "owners/{ownerId}": {
+      "schema": "GymOwner",
+      "description": "Owner profiles indexed by their auth UID"
+    },
+    "members/{memberId}": {
+      "schema": "Member",
+      "description": "All gym members across all owners"
+    },
+    "fameGallery/{photoId}": {
+      "schema": "FamePhoto",
+      "description": "Photos for the Gym of Fame gallery"
+    }
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "name": "Five Star Fitness Point",
+  "description": "A comprehensive gym management system for tracking memberships, analytics, and revenue.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["Firebase", "Charts", "Excel Export"]
+}

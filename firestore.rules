@@ -1,0 +1,88 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(ownerId) {
+      return isSignedIn() && request.auth.uid == ownerId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Validation helpers
+    function isValidGymOwner(data) {
+      return data.keys().hasAll(['userId', 'gymName', 'name', 'createdAt']) &&
+             data.userId == request.auth.uid &&
+             data.gymName is string && data.gymName.size() <= 200 &&
+             data.name is string && data.name.size() <= 200 &&
+             data.createdAt is timestamp &&
+             (!('photoUrl' in data) || (data.photoUrl is string && data.photoUrl.size() <= 1500000)) &&
+             (!('qrPhotoUrl' in data) || (data.qrPhotoUrl is string && data.qrPhotoUrl.size() <= 1500000));
+    }
+
+    function isValidMember(data) {
+      return data.keys().hasAll(['ownerId', 'name', 'startDate', 'endDate', 'amountPaid', 'status', 'createdAt']) &&
+             data.ownerId == request.auth.uid &&
+             data.name is string && data.name.size() <= 200 &&
+             data.startDate is timestamp &&
+             data.endDate is timestamp &&
+             data.amountPaid is number &&
+             data.status in ['active', 'out'] &&
+             data.createdAt is timestamp &&
+             (!('photoUrl' in data) || (data.photoUrl is string && data.photoUrl.size() <= 1500000));
+    }
+
+    function isValidFamePhoto(data) {
+      return data.keys().hasAll(['ownerId', 'photoUrl', 'createdAt']) &&
+             data.ownerId == request.auth.uid &&
+             data.photoUrl is string && data.photoUrl.size() <= 1500000 &&
+             data.createdAt is timestamp;
+    }
+
+    // Rules
+    match /owners/{ownerId} {
+      allow read: if isOwner(ownerId);
+      allow create: if isOwner(ownerId) && isValidGymOwner(incoming());
+      allow update: if isOwner(ownerId) && isValidGymOwner(incoming()) &&
+                   incoming().userId == existing().userId &&
+                   incoming().createdAt == existing().createdAt;
+      allow delete: if false; // Owners profile shouldn't be deleted easily
+    }
+
+    match /members/{memberId} {
+      allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+      allow get: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+      allow create: if isSignedIn() && incoming().ownerId == request.auth.uid && isValidMember(incoming());
+      allow update: if isSignedIn() && existing().ownerId == request.auth.uid && 
+                   incoming().ownerId == existing().ownerId &&
+                   isValidMember(incoming());
+      allow delete: if isSignedIn() && existing().ownerId == request.auth.uid;
+    }
+
+    match /fameGallery/{photoId} {
+      allow read: if true; // Publicly viewable gallery
+      allow list: if true;
+      allow create: if isSignedIn() && incoming().ownerId == request.auth.uid && isValidFamePhoto(incoming());
+      allow update: if isSignedIn() && existing().ownerId == request.auth.uid && isValidFamePhoto(incoming());
+      allow delete: if isSignedIn() && existing().ownerId == request.auth.uid;
+    }
+  }
+}
